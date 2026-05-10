@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - BodaConnect</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<nav>
+    <a class="nav-brand" href="/">🏍️ BodaConnect</a>
+    <div class="nav-links">
+        <span class="nav-user">Admin</span>
+        <a href="/">Home</a>
+        <a href="/logout" class="logout">Logout</a>
+    </div>
+</nav>
+
+<div class="flash-container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            <div class="flash {{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endwith %}
+</div>
+
+<div class="container">
+
+    <!-- Stats -->
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="number">{{ users|length }}</div>
+            <div class="label">Total Users</div>
+        </div>
+        <div class="stat-card">
+            <div class="number">{{ total_rides }}</div>
+            <div class="label">Total Rides</div>
+        </div>
+        <div class="stat-card">
+            <div class="number">{{ pending }}</div>
+            <div class="label">Pending</div>
+        </div>
+        <div class="stat-card">
+            <div class="number">{{ completed }}</div>
+            <div class="label">Completed</div>
+        </div>
+    </div>
+
+    <!-- Users -->
+    <div class="card">
+        <h2>All Users</h2>
+        {% if users %}
+        <table>
+            <tr>
+                <th>#</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Role</th>
+                <th>Action</th>
+            </tr>
+            {% for user in users %}
+            <tr>
+                <td>{{ user[0] }}</td>
+                <td>{{ user[1] }} {{ user[2] }}</td>
+                <td>{{ user[3] }}</td>
+                <td>{{ user[4] }}</td>
+                <td>
+                    <span class="role-badge role-{{ user[5] }}">{{ user[5] }}</span>
+                </td>
+                <td>
+                    <a href="/admin/delete-user/{{ user[0] }}"
+                       class="btn btn-danger btn-sm"
+                       onclick="return confirm('Delete this user?')">Delete</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+        {% else %}
+        <div class="empty-state"><p>No users yet.</p></div>
+        {% endif %}
+    </div>
+
+    <!-- All Rides -->
+    <div class="card">
+        <h2>All Rides</h2>
+        {% if rides %}
+        <table>
+            <tr>
+                <th>#</th>
+                <th>Customer</th>
+                <th>Rider</th>
+                <th>Pickup</th>
+                <th>Destination</th>
+                <th>Status</th>
+                <th>Date</th>
+            </tr>
+            {% for ride in rides %}
+            <tr>
+                <td>{{ ride[0] }}</td>
+                <td>{{ ride[5] }} {{ ride[6] }}</td>
+                <td>
+                    {% if ride[8] %}
+                        {{ ride[8] }} {{ ride[9] }}
+                    {% else %}
+                        <span style="color:#999">Unassigned</span>
+                    {% endif %}
+                </td>
+                <td>{{ ride[1] }}</td>
+                <td>{{ ride[2] }}</td>
+                <td><span class="badge badge-{{ ride[3] }}">{{ ride[3] }}</span></td>
+                <td style="color:#999; font-size:0.85em;">{{ ride[4] }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+        {% else %}
+        <div class="empty-state"><p>No rides yet.</p></div>
+        {% endif %}
+    </div>
+
+</div>
+</body>
+</html>

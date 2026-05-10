@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Book a Ride - BodaConnect</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        html, body { height:100%; font-family:'Segoe UI',Arial,sans-serif; overflow:hidden; }
+
+        /* MAP */
+        #map {
+            position:fixed; top:0; left:0;
+            width:100vw; height:100vh; z-index:1;
+        }
+
+        /* TOP BAR */
+        .top-bar {
+            position:fixed; top:0; left:0; right:0; z-index:500;
+            height:56px; background:rgba(15,15,25,0.92);
+            backdrop-filter:blur(12px);
+            display:flex; align-items:center;
+            justify-content:space-between; padding:0 18px;
+        }
+        .top-bar .brand {
+            font-size:1.1rem; font-weight:800; color:white;
+            text-decoration:none;
+        }
+        .top-bar .right { display:flex; align-items:center; gap:10px; }
+        .top-bar .username {
+            color:rgba(255,255,255,0.65); font-size:0.82rem;
+            background:rgba(255,255,255,0.08); padding:4px 12px;
+            border-radius:20px;
+        }
+        .top-bar .logout {
+            background:#ff6b00; color:white; font-size:0.82rem;
+            font-weight:600; padding:6px 14px; border-radius:20px;
+            text-decoration:none;
+        }
+
+        /* MY LOCATION BTN */
+        .loc-btn {
+            position:fixed; right:16px; bottom:300px; z-index:400;
+            width:46px; height:46px; background:white; border:none;
+            border-radius:50%; box-shadow:0 3px 14px rgba(0,0,0,0.22);
+            cursor:pointer; font-size:1.2rem;
+            display:flex; align-items:center; justify-content:center;
+        }
+
+        /* BOTTOM SHEET */
+        .sheet {
+            position:fixed; bottom:0; left:0; right:0; z-index:400;
+            background:white; border-radius:22px 22px 0 0;
+            box-shadow:0 -6px 32px rgba(0,0,0,0.18);
+            padding:14px 18px 28px;
+        }
+        .handle {
+            width:38px; height:4px; background:#e0e0e0;
+            border-radius:2px; margin:0 auto 14px;
+        }
+        .sheet-title {
+            font-size:1.2rem; font-weight:800; color:#1a1a1a;
+            margin-bottom:14px;
+        }
+
+        /* STOP ROWS */
+        .stops {
+            background:#f7f7f7; border-radius:14px; padding:4px 0;
+            margin-bottom:14px;
+        }
+        .stop-row {
+            display:flex; align-items:center; gap:12px;
+            padding:13px 14px; position:relative; cursor:pointer;
+        }
+        .stop-row + .stop-row::before {
+            content:''; position:absolute;
+            top:0; left:38px; right:14px;
+            height:1px; background:#ebebeb;
+        }
+        .stop-dot {
+            width:12px; height:12px; border-radius:50%; flex-shrink:0;
+        }
+        .dot-orange { background:#ff6b00; }
+        .dot-green  { background:#00b14f; }
+        .stop-text {
+            flex:1; font-size:0.95rem; color:#1a1a1a;
+            white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+        }
+        .stop-text.placeholder { color:#bbb; }
+        .stop-arrow {
+            color:#ccc; font-size:0.8rem; flex-shrink:0;
+        }
+
+        /* ROUTE PANEL */
+        .route-panel { display:none; margin-top:4px; }
+        .promo-pill {
+            display:inline-flex; align-items:center; gap:6px;
+            background:#e8f5e9; color:#2e7d32;
+            font-size:0.8rem; font-weight:600;
+            padding:6px 14px; border-radius:20px; margin-bottom:12px;
+        }
+        .arrive-row {
+            font-size:0.85rem; color:#555;
+            margin-bottom:12px; display:flex; align-items:center; gap:6px;
+        }
+        .stats-row { display:flex; gap:10px; margin-bottom:12px; }
+        .stat-box {
+            flex:1; background:#f8f8f8; border-radius:12px;
+            padding:12px 8px; text-align:center;
+        }
+        .stat-box .val { font-size:1.05rem; font-weight:800; color:#ff6b00; }
+        .stat-box .lbl {
+            font-size:0.68rem; color:#aaa; text-transform:uppercase;
+            letter-spacing:0.5px; margin-top:3px;
+        }
+        .boda-card {
+            display:flex; align-items:center; gap:14px;
+            padding:14px 16px; border:2px solid #ff6b00;
+            border-radius:16px; background:#fff8f3; margin-bottom:14px;
+        }
+        .boda-emoji { font-size:2rem; }
+        .boda-info { flex:1; }
+        .boda-name { font-size:1rem; font-weight:700; color:#1a1a1a; }
+        .boda-meta {
+            font-size:0.78rem; color:#888; margin-top:3px;
+            display:flex; align-items:center; gap:8px;
+        }
+        .faster {
+            background:#ff6b00; color:white; font-size:0.65rem;
+            font-weight:700; padding:2px 7px; border-radius:8px;
+        }
+        .boda-price { text-align:right; }
+        .boda-price .price { font-size:1.05rem; font-weight:800; color:#1a1a1a; }
+        .boda-price .old { font-size:0.75rem; color:#ccc; text-decoration:line-through; }
+        .select-btn {
+            width:100%; padding:16px; background:#ff6b00;
+            color:white; border:none; border-radius:14px;
+            font-size:1rem; font-weight:700; cursor:pointer;
+        }
+        .select-btn:hover { background:#e55d00; }
+
+        /* ── SEARCH OVERLAY (full screen like Bolt) ── */
+        .search-overlay {
+            position:fixed; top:0; left:0; right:0; bottom:0;
+            z-index:1000; background:#fff;
+            display:none; flex-direction:column;
+        }
+        .search-overlay.open { display:flex; }
+
+        .search-header {
+            display:flex; align-items:center; gap:12px;
+            padding:14px 16px; background:white;
+            border-bottom:1px solid #f0f0f0;
+            box-shadow:0 2px 8px rgba(0,0,0,0.06);
+        }
+        .back-btn {
+            width:38px; height:38px; border:none; background:#f5f5f5;
+            border-radius:50%; cursor:pointer; font-size:1rem;
+            display:flex; align-items:center; justify-content:center;
+            flex-shrink:0;
+        }
+        .search-inputs { flex:1; display:flex; flex-direction:column; gap:8px; }
+        .search-field {
+            display:flex; align-items:center; gap:10px;
+            background:#f7f7f7; border-radius:10px; padding:10px 12px;
+        }
+        .search-field input {
+            flex:1; border:none; background:transparent;
+            font-size:0.95rem; outline:none; color:#1a1a1a;
+        }
+        .search-field input::placeholder { color:#bbb; }
+        .clear-btn {
+            border:none; background:transparent; cursor:pointer;
+            color:#ccc; font-size:1rem; padding:0 2px;
+        }
+
+        /* SUGGESTIONS LIST */
+        .suggestions {
+            flex:1; overflow-y:auto; background:#fff;
+        }
+
+        .suggestion-section {
+            padding:14px 16px 4px;
+            font-size:0.75rem; font-weight:700;
+            color:#aaa; text-transform:uppercase; letter-spacing:1px;
+        }
+
+        .suggestion-item {
+            display:flex; align-items:center; gap:14px;
+            padding:13px 16px; cursor:pointer;
+            border-bottom:1px solid #fafafa;
+            transition:background 0.12s;
+        }
+        .suggestion-item:hover { background:#fff5ee; }
+
+        .sug-icon-wrap {
+            width:42px; height:42px; border-radius:50%;
+            background:#f5f5f5; display:flex;
+            align-items:center; justify-content:center;
+            font-size:1.2rem; flex-shrink:0;
+        }
+
+        .sug-info { flex:1; min-width:0; }
+        .sug-name {
+            font-size:0.92rem; font-weight:600; color:#1a1a1a;
+            white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+        }
+        .sug-addr {
+            font-size:0.76rem; color:#aaa; margin-top:2px;
+            white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+        }
+        .sug-dist {
+            font-size:0.76rem; color:#ff6b00;
+            font-weight:600; flex-shrink:0;
+        }
+
+        .sug-loader {
+            padding:30px 16px; text-align:center;
+            color:#bbb; font-size:0.9rem;
+        }
+
+        /* FLASH */
+        .flash-wrap {
+            position:fixed; top:64px; left:50%;
+            transform:translateX(-50%); z-index:600;
+            width:92%; max-width:420px;
+        }
+        .flash {
+            padding:10px 16px; border-radius:10px;
+            margin-bottom:6px; font-size:0.88rem; font-weight:500;
+        }
+        .flash.success { background:#d4edda; color:#155724; }
+        .flash.danger  { background:#f8d7da; color:#721c24; }
+
+        .leaflet-top.leaflet-right { top:70px; }
+    </style>
+</head>
+<body>
+
+<!-- MAP -->
+<div id="map"></div>
+
+<!-- TOP BAR -->
+<nav class="top-bar">
+    <a href="/" class="brand">🏍️ BodaConnect</a>
+    <div class="right">
+        <span class="username">{{ current_user.first_name }}</span>
+        <a href="/logout" class="logout">Logout</a>
+    </div>
+</nav>
+
+<!-- FLASH -->
+<div class="flash-wrap">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            <div class="flash {{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endwith %}
+</div>
+
+<!-- MY LOCATION BTN -->
+<button class="loc-btn" onclick="goToMyLocation()">📍</button>
+
+<!-- BOTTOM SHEET -->
+<div class="sheet">
+    <div class="handle"></div>
+    <div class="sheet-title">Where to? 🏍️</div>
+
+    <form method="POST" id="ride-form">
+        <input type="hidden" name="pickup"      id="pickup-hidden">
+        <input type="hidden" name="destination" id="dest-hidden">
+        <input type="hidden" name="price"       id="price-hidden">
+        <input type="hidden" name="distance"    id="dist-hidden">
+        <input type="hidden" name="duration"    id="dur-hidden">
+
+        <div class="stops">
+            <!-- PICKUP ROW -->
+            <div class="stop-row">
+                <div class="stop-dot dot-orange"></div>
+                <span class="stop-text" id="pickup-display">Detecting your location...</span>
+            </div>
+            <!-- DESTINATION ROW — opens search overlay -->
+            <div class="stop-row" onclick="openSearch()" id="dest-row">
+                <div class="stop-dot dot-green"></div>
+                <span class="stop-text placeholder" id="dest-display">Type your destination...</span>
+                <span class="stop-arrow">›</span>
+            </div>
+        </div>
+
+        <!-- ROUTE PANEL -->
+        <div class="route-panel" id="route-panel">
+            <div class="promo-pill">✅ 20% promo applied</div>
+            <div class="arrive-row">🕐 <span id="arrive-time">Calculating...</span></div>
+            <div class="stats-row">
+                <div class="stat-box">
+                    <div class="val" id="s-dist">--</div>
+                    <div class="lbl">Distance</div>
+                </div>
+                <div class="stat-box">
+                    <div class="val" id="s-time">--</div>
+                    <div class="lbl">Est. Time</div>
+                </div>
+                <div class="stat-box">
+                    <div class="val" id="s-price">--</div>
+                    <div class="lbl">Price (TZS)</div>
+                </div>
+            </div>
+            <div class="boda-card">
+                <div class="boda-emoji">🏍️</div>
+                <div class="boda-info">
+                    <div class="boda-name">Boda</div>
+                    <div class="boda-meta">
+                        <span id="b-time">-- min</span>
+                        <span>👤 1</span>
+                        <span class="faster">FASTER</span>
+                    </div>
+                </div>
+                <div class="boda-price">
+                    <div class="price" id="b-price">TZS --</div>
+                    <div class="old"   id="b-old">TZS --</div>
+                </div>
+            </div>
+            <button type="submit" class="select-btn">Select Boda 🏍️</button>
+        </div>
+    </form>
+</div>
+
+<!-- ── SEARCH OVERLAY ── -->
+<div class="search-overlay" id="search-overlay">
+
+    <div class="search-header">
+        <button class="back-btn" onclick="closeSearch()">←</button>
+        <div class="search-inputs">
+            <!-- Pickup (readonly) -->
+            <div class="search-field">
+                <span style="color:#ff6b00; font-size:0.7rem;">●</span>
+                <input type="text" id="pickup-search"
+                       placeholder="Pickup location" readonly
+                       style="color:#555; cursor:default;">
+            </div>
+            <!-- Destination search -->
+            <div class="search-field" style="border:1.5px solid #ff6b00; background:white;">
+                <span style="color:#00b14f; font-size:0.7rem;">●</span>
+                <input type="text" id="dest-input"
+                       placeholder="Search destination..."
+                       autocomplete="off" autofocus>
+                <button class="clear-btn" id="clear-btn" onclick="clearDest()" style="display:none;">✕</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SUGGESTIONS -->
+    <div class="suggestions" id="suggestions">
+        <div class="suggestion-section">Nearby Places</div>
+        <div class="sug-loader" id="sug-loader">
+            Start typing to search for a destination...
+        </div>
+    </div>
+
+</div>
+
+<script>
+// ── MAP ──────────────────────────────────────────
+const map = L.map('map',{zoomControl:false}).setView([-6.1730,35.7395],13);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+    attribution:'© OpenStreetMap', maxZoom:19
+}).addTo(map);
+L.control.zoom({position:'topright'}).addTo(map);
+
+const orangeIcon = L.divIcon({
+    html:`<div style="width:18px;height:18px;background:#ff6b00;border-radius:50%;border:3px solid white;box-shadow:0 2px 10px rgba(255,107,0,.7);"></div>`,
+    iconSize:[18,18],iconAnchor:[9,9],className:''
+});
+const greenIcon = L.divIcon({
+    html:`<div style="width:18px;height:18px;background:#00b14f;border-radius:50%;border:3px solid white;box-shadow:0 2px 10px rgba(0,177,79,.6);"></div>`,
+    iconSize:[18,18],iconAnchor:[9,9],className:''
+});
+
+let uLat=-6.1730, uLng=35.7395;
+let uMarker=null, dMarker=null, routeLine=null;
+
+// ── GPS ──────────────────────────────────────────
+function initGPS() {
+    if (!navigator.geolocation) { setDefaultPickup(); return; }
+    navigator.geolocation.getCurrentPosition(pos => {
+        uLat=pos.coords.latitude; uLng=pos.coords.longitude;
+        map.setView([uLat,uLng],16);
+        if (uMarker) map.removeLayer(uMarker);
+        uMarker = L.marker([uLat,uLng],{icon:orangeIcon})
+            .addTo(map).bindPopup('<b>You are here</b>').openPopup();
+        reverseGeocode(uLat,uLng);
+    }, ()=>setDefaultPickup(), {enableHighAccuracy:true,timeout:10000});
+}
+
+function setDefaultPickup() {
+    const v='Dodoma, Tanzania';
+    document.getElementById('pickup-display').textContent=v;
+    document.getElementById('pickup-display').classList.remove('placeholder');
+    document.getElementById('pickup-hidden').value=v;
+    document.getElementById('pickup-search').value=v;
+}
+
+function reverseGeocode(lat,lng) {
+    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
+    .then(r=>r.json())
+    .then(d=>{
+        const a=d.display_name
+            ? d.display_name.split(',').slice(0,3).join(', ')
+            : `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+        document.getElementById('pickup-display').textContent=a;
+        document.getElementById('pickup-display').classList.remove('placeholder');
+        document.getElementById('pickup-hidden').value=a;
+        document.getElementById('pickup-search').value=a;
+    }).catch(setDefaultPickup);
+}
+
+function goToMyLocation() {
+    navigator.geolocation && navigator.geolocation.getCurrentPosition(pos=>{
+        uLat=pos.coords.latitude; uLng=pos.coords.longitude;
+        map.setView([uLat,uLng],16);
+        if (uMarker) map.removeLayer(uMarker);
+        uMarker=L.marker([uLat,uLng],{icon:orangeIcon}).addTo(map)
+            .bindPopup('<b>You are here</b>').openPopup();
+    });
+}
+
+initGPS();
+
+// ── SEARCH OVERLAY ───────────────────────────────
+function openSearch() {
+    document.getElementById('search-overlay').classList.add('open');
+    setTimeout(()=>document.getElementById('dest-input').focus(), 100);
+}
+
+function closeSearch() {
+    document.getElementById('search-overlay').classList.remove('open');
+}
+
+function clearDest() {
+    document.getElementById('dest-input').value='';
+    document.getElementById('clear-btn').style.display='none';
+    document.getElementById('suggestions').innerHTML=
+        '<div class="suggestion-section">Nearby Places</div>'+
+        '<div class="sug-loader" id="sug-loader">Start typing to search for a destination...</div>';
+    document.getElementById('dest-input').focus();
+}
+
+// ── PLACE ICONS ──────────────────────────────────
+function placeIcon(t) {
+    const m={aerodrome:'✈️',airport:'✈️',restaurant:'🍽️',fast_food:'🍔',
+             cafe:'☕',bar:'🍺',pub:'🍺',hotel:'🏨',hostel:'🏨',
+             guest_house:'🏠',hospital:'🏥',clinic:'🏥',pharmacy:'💊',
+             school:'🏫',university:'🎓',college:'🎓',bank:'🏦',atm:'💳',
+             supermarket:'🛒',mall:'🛍️',marketplace:'🛒',fuel:'⛽',
+             bus_station:'🚌',bus_stop:'🚌',police:'👮',park:'🌳',
+             mosque:'🕌',church:'⛪',cinema:'🎬'};
+    for (const k of Object.keys(m))
+        if (t && t.toLowerCase().includes(k)) return m[k];
+    return '📍';
+}
+
+// ── SEARCH ───────────────────────────────────────
+let timer=null;
+const di=document.getElementById('dest-input');
+const sg=document.getElementById('suggestions');
+
+di.addEventListener('input', function() {
+    const q=this.value.trim();
+    document.getElementById('clear-btn').style.display=q?'block':'none';
+    clearTimeout(timer);
+    if (q.length<2) {
+        sg.innerHTML='<div class="suggestion-section">Nearby Places</div>'+
+            '<div class="sug-loader">Start typing to search...</div>';
+        return;
+    }
+    sg.innerHTML='<div class="sug-loader">🔍 Searching for "<b>'+q+'"</b>...</div>';
+    timer=setTimeout(()=>doSearch(q),400);
+});
+
+function doSearch(q) {
+    fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&addressdetails=1&extratags=1&limit=8&countrycodes=tz`,
+        {headers:{'Accept-Language':'en'}})
+    .then(r=>r.json())
+    .then(res=>{
+        if (!res.length) {
+            sg.innerHTML='<div class="sug-loader">No places found for "<b>'+q+'</b>".<br><small>Try a different name.</small></div>';
+            return;
+        }
+        sg.innerHTML='<div class="suggestion-section">Results for "'+q+'"</div>';
+        res.forEach(p=>{
+            const type=p.type||p.class||'';
+            const icon=placeIcon(type);
+            const name=p.display_name.split(',')[0];
+            const addr=p.display_name.split(',').slice(1,4).join(',').trim();
+            const d=calcDist(uLat,uLng,+p.lat,+p.lon);
+            const dt=d<1?`${Math.round(d*1000)}m`:`${d.toFixed(1)}km`;
+
+            const el=document.createElement('div');
+            el.className='suggestion-item';
+            el.innerHTML=`
+                <div class="sug-icon-wrap">${icon}</div>
+                <div class="sug-info">
+                    <div class="sug-name">${name}</div>
+                    <div class="sug-addr">${addr}</div>
+                </div>
+                <div class="sug-dist">${dt}</div>`;
+
+            el.onclick=()=>{
+                const fullAddr=p.display_name.split(',').slice(0,3).join(',');
+                document.getElementById('dest-display').textContent=fullAddr;
+                document.getElementById('dest-display').classList.remove('placeholder');
+                document.getElementById('dest-hidden').value=fullAddr;
+                closeSearch();
+                placeDestAndRoute(+p.lat,+p.lon,name);
+            };
+            sg.appendChild(el);
+        });
+    })
+    .catch(()=>{sg.innerHTML='<div class="sug-loader">Search unavailable. Please try again.</div>';});
+}
+
+// ── DESTINATION + ROUTE ──────────────────────────
+function placeDestAndRoute(lat,lng,name) {
+    if (dMarker) map.removeLayer(dMarker);
+    dMarker=L.marker([lat,lng],{icon:greenIcon}).addTo(map)
+        .bindPopup(`<b>🏁 ${name}</b>`).openPopup();
+
+    if (routeLine) map.removeLayer(routeLine);
+    routeLine=L.polyline([[uLat,uLng],[lat,lng]],{
+        color:'#ff6b00',weight:4,opacity:.6,dashArray:'8,6'
+    }).addTo(map);
+
+    map.fitBounds(L.latLngBounds([uLat,uLng],[lat,lng]),{
+        paddingTopLeft:[40,80],paddingBottomRight:[40,320]
+    });
+
+    fetch(`https://router.project-osrm.org/route/v1/driving/${uLng},${uLat};${lng},${lat}?overview=full&geometries=geojson`)
+    .then(r=>r.json())
+    .then(d=>{
+        if (d.code!=='Ok'||!d.routes.length){fallback(lat,lng);return;}
+        const r=d.routes[0];
+        const km=(r.distance/1000).toFixed(1);
+        const mn=Math.round(r.duration/60);
+        if (routeLine) map.removeLayer(routeLine);
+        routeLine=L.polyline(r.geometry.coordinates.map(c=>[c[1],c[0]]),
+            {color:'#ff6b00',weight:5,opacity:.9}).addTo(map);
+        map.fitBounds(routeLine.getBounds(),{
+            paddingTopLeft:[40,80],paddingBottomRight:[40,320]
+        });
+        showPanel(km,mn);
+    })
+    .catch(()=>fallback(lat,lng));
+}
+
+function fallback(lat,lng) {
+    const d=calcDist(uLat,uLng,lat,lng);
+    showPanel(d.toFixed(1),Math.round(d/25*60));
+}
+
+// ── PANEL ────────────────────────────────────────
+function showPanel(km,mn) {
+    const orig=Math.round((1000+km*500)/100)*100;
+    const disc=Math.round(orig*.8/100)*100;
+    const eta=new Date();
+    eta.setMinutes(eta.getMinutes()+ +mn+4);
+    const h=eta.getHours().toString().padStart(2,'0');
+    const m=eta.getMinutes().toString().padStart(2,'0');
+
+    document.getElementById('s-dist').textContent=`${km} km`;
+    document.getElementById('s-time').textContent=`${mn} min`;
+    document.getElementById('s-price').textContent=fmt(disc);
+    document.getElementById('arrive-time').textContent=`Arrive by ${h}:${m}`;
+    document.getElementById('b-time').textContent=`${+mn+4} min`;
+    document.getElementById('b-price').textContent=`TZS ${fmt(disc)}`;
+    document.getElementById('b-old').textContent=`TZS ${fmt(orig)}`;
+    document.getElementById('price-hidden').value=disc;
+    document.getElementById('dist-hidden').value=km;
+    document.getElementById('dur-hidden').value=mn;
+    document.getElementById('route-panel').style.display='block';
+    document.querySelector('.sheet').scrollTop=9999;
+}
+
+function fmt(n){return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g,',');}
+
+function calcDist(a,b,c,d){
+    const R=6371,dL=(c-a)*Math.PI/180,dO=(d-b)*Math.PI/180;
+    const x=Math.sin(dL/2)**2+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dO/2)**2;
+    return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
+}
+
+document.getElementById('ride-form').addEventListener('submit',e=>{
+    if (!document.getElementById('dest-hidden').value){
+        e.preventDefault(); alert('Please select a destination first.');
+    }
+});
+</script>
+</body>
+</html>

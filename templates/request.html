@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Request a Ride</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <nav>
+        <h1>🏍️ BodaConnect</h1>
+        <a href="/">Home</a>
+        <a href="/dashboard">Rider Dashboard</a>
+    </nav>
+    <div class="form-container">
+        <h2>Request a Ride</h2>
+        <form method="POST">
+            <input type="text" name="name" placeholder="Your Name" required>
+            <input type="text" name="pickup" placeholder="Pickup Location" required>
+            <input type="text" name="destination" placeholder="Destination" required>
+            <button type="submit" class="btn">Book Ride 🏍️</button>
+        </form>
+    </div>
+</body>
+</html>

@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Dashboard - BodaConnect</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<nav>
+    <a class="nav-brand" href="/">🏍️ BodaConnect</a>
+    <div class="nav-links">
+        <span class="nav-user">{{ current_user.first_name }} {{ current_user.last_name }}</span>
+        <a href="/">Home</a>
+        <a href="/customer/request-ride">Book a Ride</a>
+        <a href="/logout" class="logout">Logout</a>
+    </div>
+</nav>
+
+<div class="flash-container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            <div class="flash {{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endwith %}
+</div>
+
+<div class="container">
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="number">{{ rides|length }}</div>
+            <div class="label">Total Rides</div>
+        </div>
+        <div class="stat-card">
+            <div class="number">{{ rides|selectattr(3,'equalto','completed')|list|length }}</div>
+            <div class="label">Completed</div>
+        </div>
+        <div class="stat-card">
+            <div class="number">{{ rides|selectattr(3,'equalto','pending')|list|length }}</div>
+            <div class="label">Pending</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>My Rides</h2>
+        <a href="/customer/request-ride" class="btn btn-primary btn-sm"
+           style="margin-bottom:20px; display:inline-block;">+ Book New Ride</a>
+        {% if rides %}
+        <table>
+            <tr>
+                <th>#</th>
+                <th>Pickup</th>
+                <th>Destination</th>
+                <th>Rider</th>
+                <th>Rider Phone</th>
+                <th>Status</th>
+                <th>Date</th>
+            </tr>
+            {% for ride in rides %}
+            <tr>
+                <td>{{ ride[0] }}</td>
+                <td>{{ ride[1] }}</td>
+                <td>{{ ride[2] }}</td>
+                <td>
+                    {% if ride[5] %}
+                        {{ ride[5] }} {{ ride[6] }}
+                    {% else %}
+                        <span style="color:#999">Awaiting rider...</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if ride[7] %}
+                        <a href="tel:{{ ride[7] }}" class="btn btn-success btn-sm">
+                            Call {{ ride[7] }}
+                        </a>
+                    {% else %}
+                        <span style="color:#999">-</span>
+                    {% endif %}
+                </td>
+                <td><span class="badge badge-{{ ride[3] }}">{{ ride[3] }}</span></td>
+                <td style="color:#999; font-size:0.85em;">{{ ride[4] }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+        {% else %}
+        <div class="empty-state">
+            <p>No rides yet. Book your first ride!</p>
+            <br>
+            <a href="/customer/request-ride" class="btn btn-primary">Book a Ride</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+</body>
+</html>
