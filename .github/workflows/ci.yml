@@ -28,18 +28,57 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest
+          pip install flask flask-login werkzeug psycopg2-binary pytest
+
+      - name: Wait for PostgreSQL
+        run: |
+          until pg_isready -h localhost -p 5432; do
+            echo "Waiting for postgres..."
+            sleep 2
+          done
+
+      - name: Initialize database
+        env:
+          DATABASE_URL: postgresql://bodauser:bodapass@localhost:5432/bodaconnect
+        run: |
+          python -c "
+          import psycopg2
+          from werkzeug.security import generate_password_hash
+          conn = psycopg2.connect('postgresql://bodauser:bodapass@localhost:5432/bodaconnect')
+          c = conn.cursor()
+          c.execute('''CREATE TABLE IF NOT EXISTS users (
+              id SERIAL PRIMARY KEY,
+              first_name TEXT NOT NULL,
+              last_name TEXT NOT NULL,
+              email TEXT UNIQUE NOT NULL,
+              phone TEXT NOT NULL,
+              password TEXT NOT NULL,
+              role TEXT NOT NULL DEFAULT 'customer'
+          )''')
+          c.execute('''CREATE TABLE IF NOT EXISTS rides (
+              id SERIAL PRIMARY KEY,
+              customer_id INTEGER NOT NULL REFERENCES users(id),
+              rider_id INTEGER REFERENCES users(id),
+              pickup TEXT NOT NULL,
+              destination TEXT NOT NULL,
+              customer_phone TEXT NOT NULL,
+              status TEXT DEFAULT 'pending',
+              created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          )''')
+          conn.commit()
+          conn.close()
+          print('Database initialized!')
+          "
 
       - name: Run tests
         env:
@@ -54,13 +93,14 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Build Docker image
         run: |
           docker build -t bodaconnect:latest .
           docker build -t bodaconnect:v1 .
 
-      - name: Verify image was built
+      - name: Verify Docker image
         run: |
           docker images | grep bodaconnect
+          echo "Docker image built successfully!"
