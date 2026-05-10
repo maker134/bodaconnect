@@ -16,7 +16,7 @@ jobs:
         image: postgres:15
         env:
           POSTGRES_USER: bodauser
-          POSTGRES_PASSWORD: Fordz2003
+          POSTGRES_PASSWORD: bodapass
           POSTGRES_DB: bodaconnect
         ports:
           - 5432:5432
