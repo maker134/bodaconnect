@@ -75,9 +75,21 @@ jobs:
               status TEXT DEFAULT 'pending',
               created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
           )''')
+          c.execute('SELECT id FROM users WHERE email = %s', ('admin@bodaconnect.com',))
+          if not c.fetchone():
+              c.execute('''INSERT INTO users
+                  (first_name, last_name, email, phone, password, role)
+                  VALUES (%s, %s, %s, %s, %s, %s)''',
+                  ('Admin', 'BodaConnect', 'admin@bodaconnect.com',
+                   '+255000000000',
+                   generate_password_hash('admin123'),
+                   'admin'))
+              print('Admin user created successfully!')
+          else:
+              print('Admin user already exists!')
           conn.commit()
           conn.close()
-          print('Database initialized!')
+          print('Database initialized successfully!')
           "
 
       - name: Run tests
