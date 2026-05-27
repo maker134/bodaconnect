@@ -46,7 +46,23 @@ services:
       - "5433:5432"
     networks:
       - bodaconnect-network
+      - monitoring-network
     restart: always
+
+  # ── PostgreSQL Exporter ─────────────────────────
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: postgres-exporter
+    restart: always
+    ports:
+      - "9187:9187"
+    environment:
+      - DATA_SOURCE_NAME=postgresql://bodauser:bodapass@db:5432/bodaconnect?sslmode=disable
+    depends_on:
+      - db
+    networks:
+      - monitoring-network
+      - bodaconnect-network
 
   # ── Node Exporter ───────────────────────────────
   node-exporter:
@@ -67,6 +83,7 @@ services:
       - "9090:9090"
     volumes:
       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
     networks:
       - monitoring-network
 
@@ -80,6 +97,8 @@ services:
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin123
+    volumes:
+      - grafana-storage:/var/lib/grafana
     networks:
       - monitoring-network
 
@@ -91,3 +110,5 @@ networks:
 
 volumes:
   postgres-data:
+  grafana-storage:
+  prometheus-data:
