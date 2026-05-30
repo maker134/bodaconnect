@@ -26,8 +26,11 @@ services:
       - .:/app
     depends_on:
       - db
+      - mqtt-broker
     environment:
       - DATABASE_URL=postgresql://bodauser:bodapass@db:5432/bodaconnect
+      - MQTT_BROKER=mqtt-broker
+      - MQTT_PORT=1883
     networks:
       - bodaconnect-network
     restart: always
@@ -63,6 +66,21 @@ services:
     networks:
       - monitoring-network
       - bodaconnect-network
+
+  # ── MQTT Broker (Mosquitto) ─────────────────────
+  mqtt-broker:
+    image: eclipse-mosquitto:latest
+    container_name: mqtt-broker
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./mqtt/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - mqtt-data:/mosquitto/data
+      - mqtt-logs:/mosquitto/log
+    networks:
+      - bodaconnect-network
+    restart: always
 
   # ── Node Exporter ───────────────────────────────
   node-exporter:
@@ -112,3 +130,5 @@ volumes:
   postgres-data:
   grafana-storage:
   prometheus-data:
+  mqtt-data:
+  mqtt-logs:

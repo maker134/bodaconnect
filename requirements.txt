@@ -3,3 +3,4 @@ flask-login
 werkzeug
 psycopg2-binary
 pytest
+paho-mqtt

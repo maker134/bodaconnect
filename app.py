@@ -6,6 +6,19 @@ import os
 import time
 
 app = Flask(__name__)
+from mqtt_service import start_mqtt_background, publish_ride_request, publish_ride_status
+
+# Start MQTT in background
+import threading
+def init_mqtt():
+    time.sleep(5)  # Wait for broker to start
+    start_mqtt_background(app)
+
+mqtt_thread = threading.Thread(target=init_mqtt, daemon=True)
+mqtt_thread.start()
+
+
+
 app.secret_key = 'bodaconnect_secret_2024'
 
 login_manager = LoginManager()
@@ -183,10 +196,26 @@ def request_ride():
         conn = get_db()
         c = conn.cursor()
         c.execute('''INSERT INTO rides (customer_id, pickup, destination, customer_phone)
-                     VALUES (%s, %s, %s, %s)''',
+                     VALUES (%s, %s, %s, %s) RETURNING id''',
                   (current_user.id, pickup, destination, current_user.phone))
+        ride_id = c.fetchone()[0]
         conn.commit()
         conn.close()
+
+        # Publish to MQTT broker
+        try:
+            if hasattr(app, 'mqtt_client'):
+                publish_ride_request(
+                    app.mqtt_client,
+                    user_id=current_user.id,
+                    pickup=pickup,
+                    destination=destination,
+                    phone=current_user.phone
+                )
+                print(f"✅ Ride request published to MQTT!")
+        except Exception as e:
+            print(f"⚠️ MQTT publish failed: {e}")
+
         flash('Ride requested! A rider will contact you on ' + current_user.phone, 'success')
         return redirect(url_for('customer_dashboard'))
     return render_template('request_ride.html')
