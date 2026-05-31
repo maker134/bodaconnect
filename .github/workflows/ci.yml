@@ -38,7 +38,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install flask flask-login werkzeug psycopg2-binary pytest
+          pip install flask flask-login werkzeug psycopg2-binary pytest paho-mqtt
 
       - name: Wait for PostgreSQL
         run: |
