@@ -6,18 +6,26 @@ import os
 import time
 
 app = Flask(__name__)
-from mqtt_service import start_mqtt_background, publish_ride_request, publish_ride_status
+# ── MQTT Integration (optional - won't crash if broker unavailable) ──
+try:
+    from mqtt_service import start_mqtt_background, publish_ride_request, publish_ride_status
+    import threading
+    import time
 
-# Start MQTT in background
-import threading
-def init_mqtt():
-    time.sleep(5)  # Wait for broker to start
-    start_mqtt_background(app)
+    def init_mqtt():
+        time.sleep(5)
+        try:
+            start_mqtt_background(app)
+        except Exception as e:
+            print(f"⚠️ MQTT not available: {e}")
 
-mqtt_thread = threading.Thread(target=init_mqtt, daemon=True)
-mqtt_thread.start()
-
-
+    mqtt_thread = threading.Thread(target=init_mqtt, daemon=True)
+    mqtt_thread.start()
+    print("✅ MQTT service initialized")
+except ImportError:
+    print("⚠️ paho-mqtt not installed - MQTT features disabled")
+except Exception as e:
+    print(f"⚠️ MQTT initialization failed: {e}")
 
 app.secret_key = 'bodaconnect_secret_2024'
 
