@@ -116,3 +116,9 @@ jobs:
         run: |
           docker images | grep bodaconnect
           echo "Docker image built successfully!"
+          
+
+          - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flask flask-login werkzeug psycopg2-binary pytest paho-mqtt
