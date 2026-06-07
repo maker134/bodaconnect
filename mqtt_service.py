@@ -7,8 +7,8 @@ This file handles all real-time communication between:
 - Backend (publishes ride status updates)
 
 Topics used:
-- ride/request  → Passenger requests a ride
-- ride/status   → Driver updates ride status
+- ride/request    → Passenger requests a ride
+- ride/status     → Driver updates ride status
 - driver/location → Driver sends location updates
 """
 
@@ -17,10 +17,15 @@ import json
 import os
 import time
 import threading
+import ssl
 
 # ── MQTT Configuration ──────────────────────────────────────
-MQTT_BROKER = os.environ.get('MQTT_BROKER', 'localhost')
-MQTT_PORT   = int(os.environ.get('MQTT_PORT', 1883))
+# These values are read from environment variables set on Render
+# Locally they fall back to localhost for development
+MQTT_BROKER   = os.environ.get('MQTT_BROKER', 'localhost')
+MQTT_PORT     = int(os.environ.get('MQTT_PORT', 1883))
+MQTT_USERNAME = os.environ.get('MQTT_USERNAME', '')
+MQTT_PASSWORD = os.environ.get('MQTT_PASSWORD', '')
 
 # ── Topics ──────────────────────────────────────────────────
 TOPIC_RIDE_REQUEST    = 'ride/request'
@@ -34,7 +39,6 @@ def on_connect(client, userdata, flags, rc):
     """Called when connected to MQTT broker"""
     if rc == 0:
         print(f"✅ Connected to MQTT Broker at {MQTT_BROKER}:{MQTT_PORT}")
-        # Subscribe to all topics
         client.subscribe(TOPIC_RIDE_REQUEST)
         client.subscribe(TOPIC_RIDE_STATUS)
         client.subscribe(TOPIC_DRIVER_LOCATION)
@@ -55,14 +59,11 @@ def on_message(client, userdata, msg):
             'time': time.strftime('%H:%M:%S')
         }
         received_messages.append(message)
-        # Keep only last 50 messages
         if len(received_messages) > 50:
             received_messages.pop(0)
-
         print(f"\n📨 Message received!")
         print(f"   Topic: {msg.topic}")
         print(f"   Data:  {json.dumps(payload, indent=2)}")
-
     except Exception as e:
         print(f"❌ Error processing message: {e}")
 
@@ -71,18 +72,29 @@ def on_disconnect(client, userdata, rc):
     print(f"⚠️  Disconnected from MQTT Broker (code: {rc})")
 
 def create_mqtt_client():
-    """Create and configure MQTT client"""
+    """
+    Create and configure MQTT client.
+    If USERNAME is set (HiveMQ Cloud), it enables:
+    - TLS encryption (port 8883)
+    - Username/password authentication
+    """
     client = mqtt.Client(client_id="bodaconnect-backend")
     client.on_connect    = on_connect
     client.on_message    = on_message
     client.on_disconnect = on_disconnect
+
+    # If credentials are provided, we're connecting to HiveMQ Cloud
+    # HiveMQ requires TLS (encrypted connection) on port 8883
+    if MQTT_USERNAME and MQTT_PASSWORD:
+        client.username_pw_set(MQTT_USERNAME, MQTT_PASSWORD)
+        # Enable TLS — like HTTPS but for MQTT
+        client.tls_set(tls_version=ssl.PROTOCOL_TLS)
+        print(f"🔒 TLS enabled for HiveMQ Cloud connection")
+
     return client
 
 def publish_ride_request(client, user_id, pickup, destination, phone):
-    """
-    Passenger publishes a ride request
-    Topic: ride/request
-    """
+    """Passenger publishes a ride request — Topic: ride/request"""
     message = {
         "event":       "ride_request",
         "user_id":     user_id,
@@ -100,11 +112,7 @@ def publish_ride_request(client, user_id, pickup, destination, phone):
     return result
 
 def publish_ride_status(client, ride_id, driver_id, status, passenger_id):
-    """
-    Driver publishes ride status update
-    Topic: ride/status
-    Status can be: accepted, started, completed
-    """
+    """Driver publishes ride status update — Topic: ride/status"""
     message = {
         "event":        "ride_status",
         "ride_id":      ride_id,
@@ -121,10 +129,7 @@ def publish_ride_status(client, ride_id, driver_id, status, passenger_id):
     return result
 
 def publish_driver_location(client, driver_id, latitude, longitude, ride_id=None):
-    """
-    Driver publishes location update
-    Topic: driver/location
-    """
+    """Driver publishes location update — Topic: driver/location"""
     message = {
         "event":     "location_update",
         "driver_id": driver_id,
@@ -141,7 +146,10 @@ def publish_driver_location(client, driver_id, latitude, longitude, ride_id=None
     return result
 
 def start_mqtt_background(app):
-    """Start MQTT client in background thread"""
+    """
+    Start MQTT client in a background thread so it doesn't block Flask.
+    Automatically retries if connection fails.
+    """
     def run():
         client = create_mqtt_client()
         app.mqtt_client = client

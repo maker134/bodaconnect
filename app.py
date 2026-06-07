@@ -6,6 +6,7 @@ import os
 import time
 
 app = Flask(__name__)
+
 # ── MQTT Integration (optional - won't crash if broker unavailable) ──
 try:
     from mqtt_service import start_mqtt_background, publish_ride_request, publish_ride_status
@@ -40,14 +41,25 @@ def get_db():
     return conn
 
 def init_db():
+    """
+    Initialize database tables.
+    Retries up to 10 times waiting for PostgreSQL to be ready.
+    Fixed: conn is now guaranteed to exist before use, or app exits cleanly.
+    """
+    conn = None  # ← This prevents the UnboundLocalError
     for i in range(10):
         try:
             conn = get_db()
-            print("Connected to database!")
+            print("✅ Connected to database!")
             break
         except Exception as e:
             print(f"Waiting for database... ({i+1}/10)")
             time.sleep(3)
+
+    # If all 10 retries failed, conn is still None — exit clearly
+    if conn is None:
+        print("❌ Could not connect to database after 10 attempts. Exiting.")
+        return
 
     c = conn.cursor()
 
@@ -81,7 +93,7 @@ def init_db():
 
     conn.commit()
     conn.close()
-    print("Database ready!")
+    print("✅ Database ready!")
 
 class User(UserMixin):
     def __init__(self, id, first_name, last_name, email, phone, role):
