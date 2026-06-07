@@ -79,13 +79,13 @@ jobs:
       # Build image with 3 tags: latest, v1.0, and commit SHA
       - name: Build Docker image
         run: |
-          docker build -t maker678/bodaconnect:latest \
-                       -t maker678/bodaconnect:v1.0 \
-                       -t maker678/bodaconnect:${{ steps.vars.outputs.sha_short }} .
+          docker build -t maker679/bodaconnect:latest \
+                       -t maker679/bodaconnect:v1.0 \
+                       -t maker679/bodaconnect:${{ steps.vars.outputs.sha_short }} .
 
       # Push all 3 tags to Docker Hub
       - name: Push Docker image to Docker Hub
         run: |
-          docker push maker678/bodaconnect:latest
-          docker push maker678/bodaconnect:v1.0
-          docker push maker678/bodaconnect:${{ steps.vars.outputs.sha_short }}
+          docker push maker679/bodaconnect:latest
+          docker push maker679/bodaconnect:v1.0
+          docker push maker679/bodaconnect:${{ steps.vars.outputs.sha_short }}
