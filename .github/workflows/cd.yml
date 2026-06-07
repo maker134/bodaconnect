@@ -22,27 +22,27 @@ jobs:
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKER_HUB_USERNAME }}
-          password: ${{ secrets.DOCKER_HUB_PASSWORD }}
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Build and tag Docker image
         run: |
-          docker build -t ${{ secrets.DOCKER_HUB_USERNAME }}/bodaconnect:latest .
-          docker build -t ${{ secrets.DOCKER_HUB_USERNAME }}/bodaconnect:v1 .
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/bodaconnect:latest .
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/bodaconnect:v1 .
           echo "Docker images built and tagged!"
 
       - name: Push image to Docker Hub
         run: |
-          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/bodaconnect:latest
-          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/bodaconnect:v1
+          docker push ${{ secrets.DOCKER_USERNAME }}/bodaconnect:latest
+          docker push ${{ secrets.DOCKER_USERNAME }}/bodaconnect:v1
           echo "Images pushed to Docker Hub!"
 
       - name: Show pushed images
         run: |
           echo "========================================="
           echo "Images pushed to Docker Hub:"
-          echo "${{ secrets.DOCKER_HUB_USERNAME }}/bodaconnect:latest"
-          echo "${{ secrets.DOCKER_HUB_USERNAME }}/bodaconnect:v1"
+          echo "${{ secrets.DOCKER_USERNAME }}/bodaconnect:latest"
+          echo "${{ secrets.DOCKER_USERNAME }}/bodaconnect:v1"
           echo "========================================="
 
   # ── STAGING DEPLOYMENT ─────────────────────────
@@ -61,11 +61,11 @@ jobs:
           echo "========================================="
           echo "STAGING DEPLOYMENT STARTED"
           echo "========================================="
-          echo "Pulling image: ${{ secrets.DOCKER_HUB_USERNAME }}/bodaconnect:latest"
+          echo "Pulling image: ${{ secrets.DOCKER_USERNAME }}/bodaconnect:latest"
           echo "Environment: STAGING"
           echo "Port: 5001"
           echo ""
-          docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/bodaconnect:latest
+          docker pull ${{ secrets.DOCKER_USERNAME }}/bodaconnect:latest
           docker stop bodaconnect-staging 2>/dev/null || true
           docker rm bodaconnect-staging 2>/dev/null || true
           docker run -d \
@@ -73,7 +73,7 @@ jobs:
             -p 5001:5000 \
             -e DATABASE_URL=postgresql://bodauser:bodapass@localhost:5432/bodaconnect \
             -e FLASK_ENV=staging \
-            ${{ secrets.DOCKER_HUB_USERNAME }}/bodaconnect:latest
+            ${{ secrets.DOCKER_USERNAME }}/bodaconnect:latest
           echo ""
           echo "Staging deployment complete!"
           echo "Staging URL: http://localhost:5001"
@@ -101,11 +101,11 @@ jobs:
           echo "========================================="
           echo "PRODUCTION DEPLOYMENT STARTED"
           echo "========================================="
-          echo "Pulling image: ${{ secrets.DOCKER_HUB_USERNAME }}/bodaconnect:latest"
+          echo "Pulling image: ${{ secrets.DOCKER_USERNAME }}/bodaconnect:latest"
           echo "Environment: PRODUCTION"
           echo "Port: 80"
           echo ""
-          docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/bodaconnect:latest
+          docker pull ${{ secrets.DOCKER_USERNAME }}/bodaconnect:latest
           docker stop bodaconnect-production 2>/dev/null || true
           docker rm bodaconnect-production 2>/dev/null || true
           docker run -d \
@@ -113,7 +113,7 @@ jobs:
             -p 80:5000 \
             -e DATABASE_URL=postgresql://bodauser:bodapass@localhost:5432/bodaconnect \
             -e FLASK_ENV=production \
-            ${{ secrets.DOCKER_HUB_USERNAME }}/bodaconnect:latest
+            ${{ secrets.DOCKER_USERNAME }}/bodaconnect:latest
           echo ""
           echo "Production deployment complete!"
           echo "Production URL: http://localhost"
@@ -123,13 +123,13 @@ jobs:
         run: |
           sleep 5
           docker ps | grep bodaconnect-production || echo "Container running"
-          echo " BodaConnect is LIVE in Production!"
+          echo "BodaConnect is LIVE in Production!"
           echo "========================================="
           echo "DEPLOYMENT SUMMARY"
           echo "========================================="
-          echo " CI Tests passed"
-          echo " Docker image built and tagged"
+          echo "CI Tests passed"
+          echo "Docker image built and tagged"
           echo "Image pushed to Docker Hub"
           echo "Staging deployment successful"
-          echo " Production approved and deployed"
+          echo "Production approved and deployed"
           echo "========================================="
