@@ -10,7 +10,13 @@
 <nav>
     <a class="nav-brand" href="/">🏍️ BodaConnect</a>
     <div class="nav-links">
-        <a href="/register">Register</a>
+        <a href="/">Home</a>
+        {% if current_user.is_authenticated %}
+            <span class="nav-user">{{ current_user.first_name }}</span>
+            <a class="logout" href="/logout">Logout</a>
+        {% else %}
+            <a href="/register">Register</a>
+        {% endif %}
     </div>
 </nav>
 
@@ -22,24 +28,90 @@
     {% endwith %}
 </div>
 
-<div class="container-sm">
-    <div class="card">
-        <h2>Login</h2>
-        <form method="POST">
-            <div class="form-group">
-                <label>Email Address</label>
-                <input type="email" name="email" required>
+<div class="login-page">
+    <div class="login-grid">
+        <aside class="login-panel">
+            <div class="panel-badge">Welcome back</div>
+            <h1>Manage rides with speed and confidence</h1>
+            <p>Sign in to monitor customers, dispatch riders, and keep every trip moving smoothly.</p>
+
+            <div class="panel-features">
+                <div class="feature-item">
+                    <span>⚡</span>
+                    <div>
+                        <strong>Instant access</strong>
+                        <p>Jump right into the dashboard and manage requests.</p>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <span>📊</span>
+                    <div>
+                        <strong>Real-time updates</strong>
+                        <p>See ride statuses and latest customer activity at a glance.</p>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <span>🔒</span>
+                    <div>
+                        <strong>Secure login</strong>
+                        <p>Protected authentication for riders, customers, and admins.</p>
+                    </div>
+                </div>
             </div>
-            <div class="form-group">
-                <label>Password</label>
-                <input type="password" name="password" required>
+
+            <div class="panel-footer">
+                New here? <a href="/register">Create your account</a> and start connecting riders fast.
             </div>
-            <button type="submit" class="btn btn-primary" style="width:100%; border-radius:8px;">Login</button>
-        </form>
-        <div class="form-footer">
-            Don't have an account? <a href="/register">Register here</a>
-        </div>
+        </aside>
+
+        <main class="login-card-container">
+            <div class="card login-card">
+                <div class="login-card-header">
+                    <div>
+                        <p class="eyebrow">Sign in to BodaConnect</p>
+                        <h2>Login</h2>
+                    </div>
+                    <div class="login-card-meta"></div>
+                </div>
+
+                <form method="POST">
+                    <div class="form-group">
+                        <label>Email Address</label>
+                        <input type="email" name="email" placeholder="you@example.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <div class="password-wrapper">
+                            <input type="password" name="password" id="passwordInput" placeholder="Enter your password" required>
+                            <button type="button" class="password-toggle" onclick="togglePasswordVisibility('passwordInput')">
+                                <span class="eye-icon">👁️</span>
+                            </button>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary login-submit">Login</button>
+                </form>
+
+                <div class="form-footer">
+                    Don't have an account? <a href="/register">Register here</a>
+                </div>
+            </div>
+        </main>
     </div>
 </div>
+
+<script>
+function togglePasswordVisibility(inputId) {
+    const passwordInput = document.getElementById(inputId);
+    const button = event.target.closest('.password-toggle');
+    
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        button.classList.add('active');
+    } else {
+        passwordInput.type = 'password';
+        button.classList.remove('active');
+    }
+}
+</script>
 </body>
 </html>

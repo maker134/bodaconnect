@@ -10,7 +10,13 @@
 <nav>
     <a class="nav-brand" href="/">🏍️ BodaConnect</a>
     <div class="nav-links">
-        <a href="/login">Login</a>
+        <a href="/">Home</a>
+        {% if current_user.is_authenticated %}
+            <span class="nav-user">{{ current_user.first_name }}</span>
+            <a class="logout" href="/logout">Logout</a>
+        {% else %}
+            <a href="/login">Login</a>
+        {% endif %}
     </div>
 </nav>
 
@@ -22,46 +28,112 @@
     {% endwith %}
 </div>
 
-<div class="container-sm">
-    <div class="card">
-        <h2>Create Account</h2>
-        <form method="POST">
-            <div class="form-row">
-                <div class="form-group">
-                    <label>First Name</label>
-                    <input type="text" name="first_name" required>
+<div class="login-page">
+    <div class="login-grid">
+        <aside class="login-panel">
+            <div class="panel-badge">Join the BodaConnect family</div>
+            <h1>Create your account and start connecting riders faster</h1>
+            <p>Register as a customer or rider, then manage bookings and ride status using one clean dashboard.</p>
+
+            <div class="panel-features">
+                <div class="feature-item">
+                    <span>🚀</span>
+                    <div>
+                        <strong>Fast onboarding</strong>
+                        <p>Set up your account in seconds with a simple registration flow.</p>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>Last Name</label>
-                    <input type="text" name="last_name" required>
+                <div class="feature-item">
+                    <span>🧭</span>
+                    <div>
+                        <strong>Clear role selection</strong>
+                        <p>Choose your role and get the right experience for customers or riders.</p>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <span>🔐</span>
+                    <div>
+                        <strong>Secure access</strong>
+                        <p>Encrypted credentials keep your rides and contact data safe.</p>
+                    </div>
                 </div>
             </div>
-            <div class="form-group">
-                <label>Email Address</label>
-                <input type="email" name="email" required>
+
+            <div class="panel-footer">
+                Already registered? <a href="/login">Sign in here</a> and continue where you left off.
             </div>
-            <div class="form-group">
-                <label>Phone Number</label>
-                <input type="tel" name="phone" required>
+        </aside>
+
+        <main class="login-card-container">
+            <div class="card login-card">
+                <div class="login-card-header">
+                    <div>
+                        <p class="eyebrow">Create account</p>
+                        <h2>Register</h2>
+                    </div>
+                    <div class="login-card-meta"></div>
+                </div>
+
+                <form method="POST">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>First Name</label>
+                            <input type="text" name="first_name" placeholder="John" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Last Name</label>
+                            <input type="text" name="last_name" placeholder="Doe" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Email Address</label>
+                        <input type="email" name="email" placeholder="you@example.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Phone Number</label>
+                        <input type="tel" name="phone" placeholder="+255 7xx xxx xxx" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <div class="password-wrapper">
+                            <input type="password" name="password" id="passwordInput" placeholder="Create a secure password" required>
+                            <button type="button" class="password-toggle" onclick="togglePasswordVisibility('passwordInput')">
+                                <span class="eye-icon">👁️</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>I am a...</label>
+                        <select name="role" required>
+                            <option value="">-- Select Role --</option>
+                            <option value="customer">Customer (book rides)</option>
+                            <option value="rider">Boda Rider (offer rides)</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary login-submit">Create Account</button>
+                </form>
+
+                <div class="form-footer">
+                    Already have an account? <a href="/login">Login here</a>
+                </div>
             </div>
-            <div class="form-group">
-                <label>Password</label>
-                <input type="password" name="password" required>
-            </div>
-            <div class="form-group">
-                <label>I am a...</label>
-                <select name="role" required>
-                    <option value="">-- Select Role --</option>
-                    <option value="customer">Customer (I want to book rides)</option>
-                    <option value="rider">Boda Rider (I want to offer rides)</option>
-                </select>
-            </div>
-            <button type="submit" class="btn btn-primary" style="width:100%; border-radius:8px;">Create Account</button>
-        </form>
-        <div class="form-footer">
-            Already have an account? <a href="/login">Login here</a>
-        </div>
+        </main>
     </div>
 </div>
+
+<script>
+function togglePasswordVisibility(inputId) {
+    const passwordInput = document.getElementById(inputId);
+    const button = event.target.closest('.password-toggle');
+    
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        button.classList.add('active');
+    } else {
+        passwordInput.type = 'password';
+        button.classList.remove('active');
+    }
+}
+</script>
 </body>
 </html>
